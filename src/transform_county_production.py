@@ -8,7 +8,7 @@ SOURCE_FILE = Path(
     r"\data\raw\OG_COUNTY_CYCLE_DATA_TABLE.dsv"
 )
 
-OUTPUT_DIR = Path("data/silver/county_production")
+OUTPUT_DIR = Path("data/bronze/county_production")
 OUTPUT_FILE = OUTPUT_DIR / "county_production.parquet"
 
 
@@ -22,7 +22,7 @@ def read_raw_data(source_file: Path) -> pd.DataFrame:
 
 
 def validate_data(df: pd.DataFrame) -> None:
-    """Validate basic expectations before writing Silver data."""
+    """Validate basic expectations before writing Bronze data."""
     required_columns = {
         "COUNTY_NO",
         "CYCLE_YEAR",
