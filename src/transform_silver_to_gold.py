@@ -28,9 +28,10 @@ def load_silver_data(path: Path) -> pd.DataFrame:
 
 
 # 3. Transform Silver to Gold
-
 def transform_to_gold(df: pd.DataFrame) -> pd.DataFrame:
-    oil_df = df.loc[df["OIL_GAS_CODE"] == "O"].copy()
+    oil_df = df.loc[
+        df["OIL_GAS_CODE"] == "O"
+    ].copy()
 
     gold_df = (
         oil_df.groupby(
@@ -38,8 +39,14 @@ def transform_to_gold(df: pd.DataFrame) -> pd.DataFrame:
             as_index=False
         )
         .agg(
-            annual_oil_production=("CNTY_OIL_PROD_VOL", "sum"),
-            months_reported=("CYCLE_MONTH", "nunique")
+            annual_oil_production=(
+                "CNTY_OIL_PROD_VOL",
+                "sum"
+            ),
+            months_reported=(
+                "CYCLE_MONTH",
+                "nunique"
+            )
         )
     )
 
@@ -50,33 +57,45 @@ def transform_to_gold(df: pd.DataFrame) -> pd.DataFrame:
     return gold_df
 
 
-
 # 4. Validate Gold data
 def validate_gold(df: pd.DataFrame) -> None:
     keys = ["COUNTY_NO", "CYCLE_YEAR"]
 
+    # Check null keys
     assert not df[keys].isna().any().any(), (
         "Gold contains null keys"
     )
 
+    # Check duplicate county-year keys
     assert not df.duplicated(subset=keys).any(), (
         "Gold contains duplicate county-year keys"
     )
 
+    # Check monthly coverage
     assert df["months_reported"].between(1, 12).all(), (
         "Invalid monthly coverage"
     )
 
+    # Check null production values
     assert df["annual_oil_production"].notna().all(), (
         "Gold contains null production values"
     )
 
+    # Check negative production values
     assert (df["annual_oil_production"] >= 0).all(), (
         "Gold contains negative production values"
     )
 
-    print("Gold validation passed!")
+    # NEW: Check consistency of monthly coverage flag
+    expected_flag = df["months_reported"] == 12
 
+    if not df["has_12_months"].eq(expected_flag).all():
+        raise ValueError(
+            "Gold validation failed: has_12_months "
+            "is inconsistent with months_reported"
+        )
+
+    print("Gold validation passed!")
 
 
 # 5. Run pipeline
@@ -89,7 +108,7 @@ def main():
 
     validate_gold(gold_df)
 
-        # Save validated Gold data
+    # Save validated Gold data
     GOLD_PATH.parent.mkdir(
         parents=True,
         exist_ok=True

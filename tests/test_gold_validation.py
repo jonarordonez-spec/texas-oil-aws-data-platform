@@ -1,11 +1,11 @@
 
 import pandas as pd
+import pytest
 
 from src.transform_silver_to_gold import (
     transform_to_gold,
     validate_gold,
 )
-
 
 def test_gold_aggregation():
     silver = pd.DataFrame({
@@ -21,7 +21,6 @@ def test_gold_aggregation():
     assert len(gold) == 1
     assert gold.iloc[0]["annual_oil_production"] == 300
     assert gold.iloc[0]["months_reported"] == 3
-
 
 def test_gold_rejects_duplicate_keys():
     gold = pd.DataFrame({
@@ -39,7 +38,6 @@ def test_gold_rejects_duplicate_keys():
         raise AssertionError(
             "Validation should reject duplicate keys"
         )
-
 
 def test_gold_preserves_zero_production():
     silver = pd.DataFrame({
@@ -71,3 +69,36 @@ def test_gold_monthly_coverage_flag():
     ).all()
 
     assert not gold["has_12_months"].any()
+
+def test_gold_full_coverage_flag():
+    months = list(range(1, 13))
+
+    silver = pd.DataFrame({
+        "COUNTY_NO": [5] * 12,
+        "CYCLE_YEAR": [2024] * 12,
+        "CYCLE_MONTH": months,
+        "OIL_GAS_CODE": ["O"] * 12,
+        "CNTY_OIL_PROD_VOL": [100] * 12,
+    })
+
+    gold = transform_to_gold(silver)
+
+    assert len(gold) == 1
+    assert gold.iloc[0]["months_reported"] == 12
+    assert gold.iloc[0]["has_12_months"]
+    assert gold.iloc[0]["annual_oil_production"] == 1200
+
+def test_gold_rejects_inconsistent_coverage_flag():
+    gold = pd.DataFrame({
+        "COUNTY_NO": [5],
+        "CYCLE_YEAR": [2024],
+        "annual_oil_production": [1200],
+        "months_reported": [12],
+        "has_12_months": [False],
+    })
+
+    with pytest.raises(
+        ValueError,
+        match="has_12_months is inconsistent"
+    ):
+        validate_gold(gold)
