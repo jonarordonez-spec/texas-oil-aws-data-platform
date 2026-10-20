@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 import pandas as pd
@@ -14,9 +15,29 @@ SILVER_DIR = Path(
 SILVER_FILE = SILVER_DIR / "county_production.parquet"
 
 
+REQUIRED_COLUMNS = [
+    "COUNTY_NO",
+    "DISTRICT_NO",
+    "CYCLE_YEAR",
+    "CYCLE_MONTH",
+    "OIL_GAS_CODE",
+    "CNTY_OIL_PROD_VOL",
+]
+
+
 def read_bronze_data(bronze_file: Path) -> pd.DataFrame:
     """Read the Bronze county production dataset."""
     return pd.read_parquet(bronze_file)
+
+
+def validate_required_columns(df: pd.DataFrame) -> None:
+    """Verify that all required columns are present."""
+    missing_columns = set(REQUIRED_COLUMNS) - set(df.columns)
+
+    if missing_columns:
+        raise ValueError(
+            f"Missing required columns: {sorted(missing_columns)}"
+        )
 
 
 def validate_required_identifiers(df: pd.DataFrame) -> None:
@@ -71,6 +92,7 @@ def validate_candidate_key(df: pd.DataFrame) -> None:
 
 def validate_contract(df: pd.DataFrame) -> None:
     """Validate the Silver data contract."""
+    validate_required_columns(df)
     validate_required_identifiers(df)
     validate_month_range(df)
     validate_candidate_key(df)
