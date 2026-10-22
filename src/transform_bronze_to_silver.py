@@ -40,6 +40,17 @@ def validate_required_columns(df: pd.DataFrame) -> None:
         )
 
 
+def validate_numeric_columns(df: pd.DataFrame) -> None:
+    """Validate that oil production has a numeric data type."""
+    column = "CNTY_OIL_PROD_VOL"
+
+    if not pd.api.types.is_numeric_dtype(df[column].dtype):
+        raise ValueError(
+            f"Column {column} must be numeric. "
+            f"Received: {df[column].dtype}"
+        )
+
+
 def validate_required_identifiers(df: pd.DataFrame) -> None:
     """Validate that required identifying fields contain no null values."""
     required_identifiers = [
@@ -93,6 +104,7 @@ def validate_candidate_key(df: pd.DataFrame) -> None:
 def validate_contract(df: pd.DataFrame) -> None:
     """Validate the Silver data contract."""
     validate_required_columns(df)
+    validate_numeric_columns(df)
     validate_required_identifiers(df)
     validate_month_range(df)
     validate_candidate_key(df)
